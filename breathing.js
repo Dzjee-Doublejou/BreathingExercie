@@ -12,6 +12,7 @@ const langEl = document.getElementById('lang');
 const soundSelect = document.getElementById('sound');
 const volumeRange = document.getElementById('volume');
 const voiceToggle = document.getElementById('voiceToggle');
+const voiceVolumeRange = document.getElementById('voiceVolume');
 const customUrlRow = document.getElementById('customUrlRow');
 const customUrl = document.getElementById('customUrl');
 const audioStatus = document.getElementById('audioStatus');
@@ -27,6 +28,7 @@ en: {
     ambient: "Ambient sound",
     customUrl: "Custom audio URL",
     ambientVol: "Ambient volume",
+    voiceVol: "Voice cue volume",
     voiceCues: "Voice cues (inhale/hold/exhale)",
     start: "Start",
     pause: "Pause",
@@ -57,6 +59,7 @@ nl: {
     ambient: "Achtergrondgeluid",
     customUrl: "Aangepaste audio-URL",
     ambientVol: "Achtergrondvolume",
+    voiceVol: "Spraakaanduiding volume",
     voiceCues: "Spraakaanwijzingen (inademen/vasthouden/uitademen)",
     start: "Start",
     pause: "Pauze",
@@ -100,6 +103,7 @@ document.querySelector('label[for="minutes"]').innerText = t('ui.minutes');
 document.querySelector('label[for="sound"]').innerText   = t('ui.ambient');
 const customLabel = document.querySelector('label[for="customUrl"]'); if (customLabel) customLabel.innerText = t('ui.customUrl');
 document.querySelector('label[for="volume"]').innerText  = t('ui.ambientVol');
+const voiceVolLabel = document.querySelector('label[for="voiceVolume"]'); if (voiceVolLabel) voiceVolLabel.innerText = t('ui.voiceVol');
 
 // Chip label
 const chipSpan = document.querySelector('.chip span'); if (chipSpan) chipSpan.innerText = t('ui.voiceCues');
@@ -183,9 +187,20 @@ LANG = langEl.value;
 applyLanguageToUI();
 });
 
+function updateAmbientDuringSession(){
+    if (!running) return;
+    const wasPaused = paused;
+    playAmbient();
+    if (wasPaused) pauseAmbient();
+}
+
 soundSelect.addEventListener('change', ()=>{
-customUrlRow.style.display = (soundSelect.value==='custom') ? 'block' : 'none';
-if (running && !paused) resumeAmbient();
+    customUrlRow.style.display = (soundSelect.value==='custom') ? 'block' : 'none';
+    updateAmbientDuringSession();
+});
+
+customUrl.addEventListener('change', ()=>{
+    if (soundSelect.value === 'custom') updateAmbientDuringSession();
 });
 
 volumeRange.addEventListener('input', ()=>{
@@ -194,9 +209,21 @@ if (audio) fadeTo(audio, targetVolume, 200);
 });
 
 function setStatus(msg, isError=false){
-audioStatus.textContent = msg;
-audioStatus.style.color = isError ? '#ff9aa2' : '#a9b0c7';
+    audioStatus.textContent = msg;
+    audioStatus.style.color = isError ? '#ff9aa2' : '#a9b0c7';
 }
+
+let voiceVolume = parseFloat(voiceVolumeRange?.value || '0.9');
+voiceVolumeRange?.addEventListener('input', ()=>{
+    voiceVolume = parseFloat(voiceVolumeRange.value || '0.9');
+});
+
+voiceToggle.addEventListener('change', ()=>{
+    if (voiceVolumeRange){
+    voiceVolumeRange.disabled = !voiceToggle.checked;
+    }
+});
+if (voiceVolumeRange){ voiceVolumeRange.disabled = !voiceToggle.checked; }
 
 // ---- Voice cues (choose a voice that matches LANG)
 function pickVoiceForLang(){
@@ -210,8 +237,8 @@ if (!voiceToggle.checked || !('speechSynthesis' in window)) return;
 const phrase = I18N[LANG]?.speak?.[phaseKey] || phaseKey;
 const u = new SpeechSynthesisUtterance(phrase);
 const v = pickVoiceForLang();
-if (v) u.voice = v;
-u.rate = 0.95; u.pitch = 1.05; u.volume = 0.9;
+    if (v) u.voice = v;
+    u.rate = 0.95; u.pitch = 1.05; u.volume = voiceVolume;
 window.speechSynthesis.cancel();
 window.speechSynthesis.speak(u);
 }
