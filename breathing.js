@@ -13,6 +13,7 @@ const soundSelect = document.getElementById('sound');
 const volumeRange = document.getElementById('volume');
 const voiceToggle = document.getElementById('voiceToggle');
 const voiceVolumeRange = document.getElementById('voiceVolume');
+const voiceVolumeRow = document.getElementById('voiceVolumeRow');
 const customUrlRow = document.getElementById('customUrlRow');
 const customUrl = document.getElementById('customUrl');
 const audioStatus = document.getElementById('audioStatus');
@@ -218,12 +219,17 @@ voiceVolumeRange?.addEventListener('input', ()=>{
     voiceVolume = parseFloat(voiceVolumeRange.value || '0.9');
 });
 
-voiceToggle.addEventListener('change', ()=>{
+function syncVoiceVolumeControls(){
     if (voiceVolumeRange){
     voiceVolumeRange.disabled = !voiceToggle.checked;
     }
-});
-if (voiceVolumeRange){ voiceVolumeRange.disabled = !voiceToggle.checked; }
+    if (voiceVolumeRow){
+    voiceVolumeRow.style.display = voiceToggle.checked ? '' : 'none';
+    }
+}
+
+voiceToggle.addEventListener('change', syncVoiceVolumeControls);
+syncVoiceVolumeControls();
 
 // ---- Voice cues (choose a voice that matches LANG)
 function pickVoiceForLang(){
@@ -262,9 +268,11 @@ subcue.textContent = subText;
 }
 function setCircle(mode, ms){
 circle.style.setProperty('--phase-ms', ms+'ms');
-circle.classList.remove('expand','shrink');
-if (mode) circle.classList.add(mode);
-halo.style.opacity = (mode==='expand') ? 1 : .65;
+if (mode){
+    circle.classList.remove('expand','shrink');
+    circle.classList.add(mode);
+    halo.style.opacity = (mode==='expand') ? 1 : .65;
+}
 }
 function setProgress(p){ progressEl.style.width = (p*100).toFixed(2)+'%'; }
 
